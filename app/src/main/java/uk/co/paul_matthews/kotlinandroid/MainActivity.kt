@@ -3,76 +3,40 @@ package uk.co.paul_matthews.kotlinandroid
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Log
-import io.reactivex.Observable
-import io.reactivex.ObservableOnSubscribe
-import io.reactivex.Observer
 import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import io.reactivex.rxkotlin.subscribeBy
-import io.reactivex.schedulers.Schedulers
-import java.util.*
+import uk.co.paul_matthews.kotlinandroid.data.Optional
+import uk.co.paul_matthews.kotlinandroid.data.Person
+import uk.co.paul_matthews.kotlinandroid.data.PersonData
 
 class MainActivity : AppCompatActivity() {
     val tag: String by lazy {
         this::class.simpleName.toString()
     }
-
-    val numbersObserver: Observable<Int> =
-        Observable.create(ObservableOnSubscribe<Int> {
-            val rand = Random()
-            for (i in 1..5) {
-                if (Thread.interrupted()) {
-                    break
-                }
-                Thread.sleep(500)
-                it?.onNext(rand.nextInt(10))
-            }
-            it?.onComplete()
-        })
-                .subscribeOn(Schedulers.newThread())
-                .observeOn(AndroidSchedulers.mainThread())
-                .cache()
+    val personData by lazy {
+        PersonData(application)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        getNumbers()
-                .take(3)
-                .subscribe(getLogger("first".padEnd(7)))
-        getNumbers()
-                .subscribe(getLogger("second".padEnd(7)))
-        getNumbers()
-                .filter({ it > 5 })
-                .subscribe(getLogger("gt 5".padEnd(7)))
-
-        getNumbers()
-                .subscribeBy(onComplete = {
-                    getNumbers().subscribe(getLogger("delayed".padEnd(7)))
+        personData.retrieve("pmatthews")
+                .subscribeOn(AndroidSchedulers.mainThread())
+                .subscribe({
+                    when (it) {
+                        is Optional.Some -> Log.d(tag, "Found user: ${it.value}")
+                        is Optional.None -> {
+                            Log.d(tag, "No user found")
+                            personData.insert(Person("pmatthews", "Paul", "Matthews"))
+                                    .subscribeOn(AndroidSchedulers.mainThread())
+                                    .subscribe({
+                                        Log.d(tag, "Inserted Correctly")
+                                    }, {
+                                        Log.e(tag, "Unable to insert")
+                                    })
+                        }
+                    }
+                }, {
+                    Log.e(tag, "Error getting user: ${it.message}: ${it.stackTrace}")
                 })
-    }
-
-    fun getNumbers(): Observable<Int> = numbersObserver
-
-    /**
-     * Get a logging subscriber
-     */
-    fun getLogger(id: String): Observer<Int> = object: Observer<Int> {
-        var count = 0
-        override fun onComplete() {
-            Log.d(tag, "$id) connection complete")
-        }
-
-        override fun onError(e: Throwable?) {
-            Log.e(tag, "$id) Error with ${e?.message}: " + e?.stackTrace)
-        }
-
-        override fun onNext(t: Int?) {
-            Log.d(tag, "$id) [${++count}] Observed: $t")
-        }
-
-        override fun onSubscribe(d: Disposable?) {
-            Log.d(tag, "$id) Subscribed!")
-        }
     }
 }
