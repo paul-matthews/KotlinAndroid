@@ -1,9 +1,14 @@
 package uk.co.paul_matthews.kotlinandroid.data
 
 import android.app.Application
-import android.arch.persistence.room.*
+import android.arch.persistence.room.Dao
+import android.arch.persistence.room.Entity
+import android.arch.persistence.room.Insert
+import android.arch.persistence.room.Query
 import android.content.ContextWrapper
-import io.reactivex.Observable
+import io.reactivex.Completable
+import io.reactivex.Flowable
+import io.reactivex.Maybe
 import io.reactivex.schedulers.Schedulers
 
 /**
@@ -11,27 +16,28 @@ import io.reactivex.schedulers.Schedulers
  */
 
 class PersonData(val app: Application): ContextWrapper(app) {
-    fun getAll(): Observable<Optional<List<Person>>> = Observable.fromCallable {
-        val response = app.getDatabase()?.personDao()?.getAll()
-        if (response == null || response.isEmpty()) {
-            Optional.None
+    fun getAll(): Flowable<List<Person>> = app.getDatabase()?.personDao()?.getAll()
+            ?.subscribeOn(Schedulers.io()) ?: Flowable.error { Error("Unable to query the database") }
+
+    fun getPeople(usernames: List<String>): Flowable<List<Person>> = app.getDatabase()?.personDao()?.getPeople(usernames)
+            ?.subscribeOn(Schedulers.io()) ?: Flowable.error { Error("Unable to query the database") }
+
+
+    fun getPerson(username: String): Maybe<Person> = Maybe.create<Person> {
+        val person = app.getDatabase()?.personDao()?.getPerson(username)
+        if (person != null) {
+            it.onSuccess(person)
         } else {
-            Optional.Some(response)
+            it.onComplete()
         }
     }.subscribeOn(Schedulers.io())
 
-    fun retrieve(username: String): Observable<Optional<Person>> = Observable.fromCallable {
-            val response = app.getDatabase()?.personDao()?.getPerson(username)
-            if (response == null) {
-                Optional.None
-            } else {
-                Optional.Some(response)
-            }
-        }.subscribeOn(Schedulers.io())
-
-    fun insert(person: Person): Observable<Optional.None> = Observable.fromCallable {
+    fun insertPerson(person: Person): Completable = Completable.fromAction {
         app.getDatabase()?.personDao()?.insert(person)
-        Optional.None
+    }.subscribeOn(Schedulers.io())
+
+    fun insertPeople(people: Array<Person>): Completable = Completable.fromAction {
+        app.getDatabase()?.personDao()?.insertAll(*people)
     }.subscribeOn(Schedulers.io())
 }
 
@@ -51,13 +57,13 @@ interface PersonDao {
     }
 
     @Query("SELECT * FROM $OBJ")
-    fun getAll(): List<Person>
+    fun getAll(): Flowable<List<Person>>
 
     @Query("SELECT * FROM $OBJ WHERE $USERNAME = :username")
     fun getPerson(username: String): Person
 
     @Query("SELECT * FROM $OBJ WHERE $USERNAME IN (:usernames)")
-    fun getPeople(usernames: List<String>): List<Person>
+    fun getPeople(usernames: List<String>): Flowable<List<Person>>
 
     @Insert
     fun insert(person: Person)
