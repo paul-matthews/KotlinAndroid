@@ -1,3 +1,11 @@
 <resources>
     <string name="app_name">KotlinAndroid</string>
+    <string name="username_label">Username</string>
+    <string name="username_field" />
+    <string name="first_name_label" >First Name</string>
+    <string name="last_name_label">Last Name</string>
+    <string name="first_name_field" />
+    <string name="last_name_field" />
+    <string name="reset">Clear</string>
+    <string name="submit">Create</string>
 </resources>
