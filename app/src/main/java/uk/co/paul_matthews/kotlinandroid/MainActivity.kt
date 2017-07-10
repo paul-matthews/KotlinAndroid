@@ -43,10 +43,7 @@ class MainActivity : AppCompatActivity() {
                     ui.updateInfo(it)
                 }
         subscriptions.add(peopleSub)
-    }
 
-    override fun onResume() {
-        super.onResume()
 
         // Subscribe to all submit btn clicks
         val submitSub = ui.getSubmitClicks().subscribe {
@@ -69,8 +66,8 @@ class MainActivity : AppCompatActivity() {
         subscriptions.add(resetSub)
     }
 
-    override fun onPause() {
-        super.onPause()
+    override fun onDestroy() {
+        super.onDestroy()
 
         subscriptions.map { it.dispose() }
         subscriptions.clear()
