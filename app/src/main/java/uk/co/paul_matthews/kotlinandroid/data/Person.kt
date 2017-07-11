@@ -1,10 +1,7 @@
 package uk.co.paul_matthews.kotlinandroid.data
 
 import android.app.Application
-import android.arch.persistence.room.Dao
-import android.arch.persistence.room.Entity
-import android.arch.persistence.room.Insert
-import android.arch.persistence.room.Query
+import android.arch.persistence.room.*
 import android.content.ContextWrapper
 import io.reactivex.Completable
 import io.reactivex.Flowable
@@ -17,10 +14,10 @@ import io.reactivex.schedulers.Schedulers
 
 class PersonData(val app: Application): ContextWrapper(app) {
     fun getAll(): Flowable<List<Person>> = app.getDatabase()?.personDao()?.getAll()
-            ?.subscribeOn(Schedulers.io()) ?: Flowable.error { Error("Unable to query the database") }
+            ?: Flowable.error { Error("Unable to query the database") }
 
     fun getPeople(usernames: List<String>): Flowable<List<Person>> = app.getDatabase()?.personDao()?.getPeople(usernames)
-            ?.subscribeOn(Schedulers.io()) ?: Flowable.error { Error("Unable to query the database") }
+            ?: Flowable.error { Error("Unable to query the database") }
 
 
     fun getPerson(username: String): Maybe<Person> = Maybe.create<Person> {
@@ -41,11 +38,7 @@ class PersonData(val app: Application): ContextWrapper(app) {
     }.subscribeOn(Schedulers.io())
 }
 
-@Entity(primaryKeys = arrayOf("username"))
-data class Person(
-        val username: String,
-        val firstName: String,
-        val lastName: String)
+@Entity data class Person(@PrimaryKey val username: String, val firstName: String, val lastName: String)
 
 @Dao
 interface PersonDao {

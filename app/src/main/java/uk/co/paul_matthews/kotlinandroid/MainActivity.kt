@@ -68,8 +68,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-
-        subscriptions.map { it.dispose() }
         subscriptions.clear()
     }
 

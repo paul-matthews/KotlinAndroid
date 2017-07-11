@@ -9,9 +9,9 @@ import android.arch.persistence.room.RoomDatabase
  * Created by pmatthews on 7/1/17.
  */
 fun Application.getDatabase(): AKDatabase? {
-    Singleton.instance.database = Singleton.instance.database ?:
+    Singleton.database = Singleton.database ?:
             Room.databaseBuilder(this, AKDatabase::class.java, "person-db").build()
-    return Singleton.instance.database
+    return Singleton.database
 }
 
 @Database(entities = arrayOf(Person::class), version = 1)
@@ -20,15 +20,10 @@ abstract class AKDatabase : RoomDatabase() {
 }
 
 /**
- * Inspired by https://medium.com/@adinugroho/singleton-in-kotlin-502f80fd8a63
+ * Inspired by https://medium.com/@adinugroho/singleton-in-kotlin-better-approach-8c5e28a140a5
  */
-class Singleton private constructor() {
-    private object Container { val INSTANCE = Singleton() }
+object Singleton {
     var database: AKDatabase? = null
-
-    companion object {
-        val instance: Singleton by lazy { Container.INSTANCE }
-    }
 }
 
 /**
